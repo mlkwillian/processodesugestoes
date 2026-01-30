@@ -29,61 +29,99 @@ excelInput.addEventListener("change", function (e) {
             alert("Planilha vazia");
             return;
         }
-        
+
         // pega TODAS as colunas, independente da posição
         const colunas = Object.keys(rows[0]);
-        
+
         // encontra a coluna que contém 'nome'
         const colunaNome = colunas.find(col =>
             col.toLowerCase().includes("nome")
         );
-        
+
         if (!colunaNome) {
             alert("❌ Nenhuma coluna contendo 'nome' foi encontrada");
             return;
         }
-        
+
         // soma duplicados como chances
         const mapaChances = {};
-        
+
         rows.forEach(linha => {
             const valor = linha[colunaNome];
             if (!valor) return;
-        
+
             const nome = String(valor).trim();
             if (!nome) return;
-        
+
             mapaChances[nome] = (mapaChances[nome] || 0) + 1;
         });
-        
+
         // monta participantes
         participantes = Object.entries(mapaChances).map(([nome, chances]) => ({
             nome,
             chances
         }));
-        
+
         // reset do sorteio
         vencedores = [];
         rebuildExpandedList();
         atualizarInfos();
         atualizarHistorico();
-        
+
         winnerName.textContent = "—";
         counterSmall.textContent = "Participantes carregados do Excel";
 
         alert(`✔ ${participantes.length} participantes importados`);
     };
 
+    /* =========================
+   LEITURA DA SEGUNDA ABA (PRÊMIOS)
+   ========================= */
+
+    if (workbook.SheetNames.length < 2) {
+        alert("❌ A planilha precisa ter uma segunda aba com os prêmios");
+        return;
+    }
+
+    const sheetPremiosName = workbook.SheetNames[1];
+    const worksheetPremios = workbook.Sheets[sheetPremiosName];
+
+    // converte para JSON
+    const rowsPremios = XLSX.utils.sheet_to_json(worksheetPremios, { defval: "" });
+
+    if (rowsPremios.length === 0) {
+        alert("❌ A aba de prêmios está vazia");
+        return;
+    }
+
+    // pega todas as colunas
+    const colunasPremios = Object.keys(rowsPremios[0]);
+
+    // encontra coluna que contenha "premios"
+    const colunaPremio = colunasPremios.find(col =>
+        col.toLowerCase().includes("premios")
+    );
+
+    if (!colunaPremio) {
+        alert("❌ Nenhuma coluna contendo 'prêmio' foi encontrada na segunda aba");
+        return;
+    }
+
+    // monta lista de prêmios
+    premios = rowsPremios
+        .map(linha => String(linha[colunaPremio]).trim())
+        .filter(p => p);
+
+    // reseta prêmios disponíveis
+    premiosDisponiveis = [...premios];
+
+
     reader.readAsArrayBuffer(file);
 });
 
 
-const premios = [
-    "🎁 Squeeze",
-    "🎁 Mexedor eletrico",
-    "🎁 Alfajor",
-    "🎁 Cookies"
-];
+let premios = [];
+
 
 /* variáveis do sorteio */
 let listaExpandida = [];
